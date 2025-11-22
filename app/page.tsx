@@ -5,7 +5,7 @@ import * as tf from '@tensorflow/tfjs';
 export default function Home() {
     const [modelo, setModelo] = useState<tf.LayersModel | null>(null);
     const [celsius, setCelsius] = useState('');
-    const [resultado, setResultado] = useState(null);
+    const [resultado, setResultado] = useState<string | null>(null);
     const [estadoCarga, setEstadoCarga] = useState('Cargando IA...');
 
     // 1. Cargar el modelo al iniciar la página
