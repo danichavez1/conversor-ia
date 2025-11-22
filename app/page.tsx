@@ -35,7 +35,7 @@ export default function Home() {
                 const inputTensor = tf.tensor2d([valorEntrada], [1, 1]);
 
                 // b. Realizar la predicción
-                const prediccionTensor = modelo.predict(inputTensor);
+                const prediccionTensor = modelo.predict(inputTensor) as tf.Tensor;
 
                 // c. Obtener el valor del tensor
                 const valores = await prediccionTensor.data();
