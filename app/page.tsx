@@ -1,65 +1,101 @@
-import Image from "next/image";
+"use client";
+import { useState, useEffect } from 'react';
+import * as tf from '@tensorflow/tfjs';
 
 export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    const [modelo, setModelo] = useState(null);
+    const [celsius, setCelsius] = useState('');
+    const [resultado, setResultado] = useState(null);
+    const [estadoCarga, setEstadoCarga] = useState('Cargando IA...');
+
+    // 1. Cargar el modelo al iniciar la página
+    useEffect(() => {
+        async function cargarModelo() {
+            try {
+                // La ruta es relativa a la carpeta 'public'
+                // Asegúrate de que model.json esté en public/model/model.json
+                const m = await tf.loadLayersModel('/model/model.json');
+                setModelo(m);
+                setEstadoCarga('IA Lista para usar 🚀');
+                console.log("Modelo cargado correctamente");
+            } catch (error) {
+                console.error("Error cargando el modelo:", error);
+                setEstadoCarga('Error al cargar la IA. Revisa la consola.');
+            }
+        }
+        cargarModelo();
+    }, []);
+
+    // 2. Función para convertir
+    const convertir = async () => {
+        if (modelo && celsius !== '') {
+            try {
+                // a. Convertir entrada a Tensor 2D [1, 1]
+                const valorEntrada = parseFloat(celsius);
+                const inputTensor = tf.tensor2d([valorEntrada], [1, 1]);
+
+                // b. Realizar la predicción
+                const prediccionTensor = modelo.predict(inputTensor);
+
+                // c. Obtener el valor del tensor
+                const valores = await prediccionTensor.data();
+
+                // d. Actualizar estado y limpiar memoria
+                setResultado(valores[0].toFixed(2));
+
+                // Importante: Limpiar memoria de tensores
+                inputTensor.dispose();
+                prediccionTensor.dispose();
+            } catch (err) {
+                console.error("Error en la predicción:", err);
+            }
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center text-white p-4">
+            <div className="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-700">
+
+                <h1 className="text-4xl font-bold mb-2 text-blue-400 text-center">
+                    Conversor Neuronal
+                </h1>
+                <p className="text-sm text-gray-400 mb-8 text-center">
+                    Modelo de Deep Learning corriendo en tu navegador
+                </p>
+
+                {/* Indicador de Estado */}
+                <div className={`text-center mb-6 text-sm font-semibold ${modelo ? 'text-green-400' : 'text-yellow-400'}`}>
+                    {estadoCarga}
+                </div>
+
+                <div className="space-y-6">
+                    <div>
+                        <label className="block text-gray-300 mb-2">Grados Celsius</label>
+                        <input
+                            type="number"
+                            value={celsius}
+                            onChange={(e) => setCelsius(e.target.value)}
+                            placeholder="Ingresa valor..."
+                            className="w-full p-3 rounded bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                        />
+                    </div>
+
+                    <button
+                        onClick={convertir}
+                        disabled={!modelo || celsius === ''}
+                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 rounded transition-all"
+                    >
+                        Convertir a Fahrenheit
+                    </button>
+
+                    {resultado && (
+                        <div className="mt-6 text-center p-4 bg-gray-700 rounded-lg border border-gray-600">
+                            <p className="text-gray-400 text-xs uppercase tracking-wider">Predicción de la IA</p>
+                            <p className="text-5xl font-bold text-white mt-2">{resultado} °F</p>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+    );
 }
